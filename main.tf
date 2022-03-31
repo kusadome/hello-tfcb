@@ -8,25 +8,28 @@ terraform {
   }
 }
 
-
 provider "aws" {
   access_key = var.access_key
   secret_key = var.secret_key
   region     = var.region
 }
+
 resource "aws_vpc" "hashicat" {
   cidr_block           = var.address_space
   enable_dns_hostnames = true
 }
+
 resource "aws_subnet" "hashicat" {
   vpc_id     = aws_vpc.hashicat.id
   cidr_block = var.subnet_prefix
 }
+
 resource "aws_instance" "hashicat" {
-  ami           = var.ami
-  count         = var.hello_tf_instance_count
-  instance_type = var.hello_tf_instance_type
-  subnet_id     = aws_subnet.hashicat.id
+  ami                         = var.ami
+  instance_type               = var.hello_tf_instance_type
+  subnet_id                   = aws_subnet.hashicat.id
+  associate_public_ip_address = true
+  vpc_security_group_ids      = [aws_security_group.hashicat.id]
 }
 
 resource "aws_security_group" "hashicat" {
@@ -35,8 +38,15 @@ resource "aws_security_group" "hashicat" {
   vpc_id = aws_vpc.hashicat.id
 
   ingress {
-    from_port       = 22
-    to_port         = 22
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port       = 0
+    to_port         = 0
     protocol        = "-1"
     cidr_blocks     = ["0.0.0.0/0"]
     prefix_list_ids = []
